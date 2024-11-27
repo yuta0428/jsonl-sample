@@ -8,7 +8,6 @@ import {
 	Title,
 	Tooltip,
 } from "chart.js";
-import { Bar } from "react-chartjs-2";
 
 ChartJS.register(
 	CategoryScale,
@@ -18,45 +17,96 @@ ChartJS.register(
 	Tooltip,
 	Legend,
 );
+import { useEffect, useState } from "react";
+import { Bar } from "react-chartjs-2";
+import DatePicker from "react-datepicker";
+import "react-datepicker/dist/react-datepicker.css";
+import nextConfig from "../../next.config";
+const BASE_PATH = nextConfig.basePath || "";
 
-const options = {
-	responsive: true,
-	plugins: {
-		legend: {
-			position: "top" as const,
-		},
-		title: {
-			display: true,
-			text: "Chart.js Bar Chart",
-		},
-	},
-};
+const Home = () => {
+	const [selectedDate, setSelectedDate] = useState<Date | null>(null);
+	const [chartData, setChartData] = useState<any>(null);
+	const [originalData, setOriginalData] = useState<any[]>([]);
 
-const labels = ["January", "February", "March", "April", "May", "June", "July"];
-const data1 = [12, 11, 14, 52, 14, 32, 36];
-const data2 = [22, 31, 17, 32, 24, 62, 66];
+	// 初期データを読み込む
+	useEffect(() => {
+		fetch(`${BASE_PATH}/data.json`)
+			.then((res) => res.json())
+			.then((data) => {
+				setOriginalData(data); // 元データを保存
+				setChartData(transformData(data)); // 初期表示用
+			});
+	}, []);
 
-const data = {
-	labels, // x軸のラベルの配列
-	datasets: [
-		{
-			label: "Dataset 1", // 凡例
-			data: data1, // データの配列(labelsと要素数同じ)
-			backgroundColor: "rgba(255, 99, 132, 0.5)", // グラフの棒の色
-		},
-		{
-			label: "Dataset 2",
-			data: data2,
-			backgroundColor: "rgba(53, 162, 235, 0.5)",
-		},
-	],
-};
+	// 日付選択時のフィルタリング処理
+	useEffect(() => {
+		if (selectedDate && originalData.length > 0) {
+			const filteredData = originalData.filter((d: any) => {
+				const dataDate = new Date(d.date);
+				return dataDate.toDateString() === selectedDate.toDateString();
+			});
 
-export default function Home() {
+			setChartData(transformData(filteredData));
+		} else {
+			setChartData(transformData(originalData)); // 全データを表示
+		}
+	}, [selectedDate, originalData]);
+
+	// グラフ用データ変換
+	const transformData = (data: any[]) => {
+		const labels = data.map((d: any) => d.date);
+		const successData = data.map((d: any) => d.success);
+		const errorData = data.map((d: any) => d.error);
+
+		return {
+			labels,
+			datasets: [
+				{
+					label: "Success",
+					data: successData,
+					backgroundColor: "rgba(75,192,192,0.6)",
+				},
+				{
+					label: "Error",
+					data: errorData,
+					backgroundColor: "rgba(255,99,132,0.6)",
+				},
+			],
+		};
+	};
+
 	return (
 		<div>
-			<h1>Static Site with Next.js 14</h1>
-			<Bar options={options} data={data} />
+			<h1>Dynamic Graph with Date Picker</h1>
+
+			{/* 日付選択ピッカー */}
+			<div>
+				<label>日付を選択:</label>
+				<DatePicker
+					selected={selectedDate}
+					onChange={(date: Date) => setSelectedDate(date)}
+					dateFormat="yyyy-MM-dd"
+					isClearable
+				/>
+			</div>
+
+			{/* グラフ表示 */}
+			{chartData ? (
+				<Bar
+					data={chartData}
+					options={{
+						responsive: true,
+						scales: {
+							y: { beginAtZero: true },
+						},
+					}}
+				/>
+			) : (
+				<p>Loading...</p>
+			)}
 		</div>
 	);
-}
+};
+
+export default Home;
