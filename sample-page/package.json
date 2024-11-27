@@ -5,7 +5,7 @@
   "scripts": {
     "dev": "next dev",
     "build": "next build && rm -rf ../docs && mv out ../docs",
-    "start": "next start",
+    "start": "npx serve@latest ../docs",
     "lint": "next lint"
   },
   "dependencies": {
