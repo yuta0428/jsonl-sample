@@ -85,7 +85,7 @@ const Home = () => {
 				<label>日付を選択:</label>
 				<DatePicker
 					selected={selectedDate}
-					onChange={(date: Date) => setSelectedDate(date)}
+					onChange={(date: Date | null) => setSelectedDate(date)}
 					dateFormat="yyyy-MM-dd"
 					isClearable
 				/>
